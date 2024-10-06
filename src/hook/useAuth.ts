@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { OpenloginUserInfo } from "@web3auth/openlogin-adapter";
 import { IProvider } from "@web3auth/base";
 import { getWeb3AuthInstance } from "../lib/web3-auth";
 import AuthService from "../services/auth-service";
@@ -7,6 +8,7 @@ export const useAuth = () => {
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [authService, setAuthService] = useState<AuthService | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [userInfo, setUserInfo] = useState<Partial<OpenloginUserInfo> | null>(null);
 
   const initAuth = useCallback(async () => {
     try {
@@ -26,7 +28,21 @@ export const useAuth = () => {
     } catch (error) {
       console.error("Error during initAuth:", error);
     }
-  }, [setLoggedIn]);
+  }, []);
+
+  useEffect(() => {
+    initAuth();
+    return () => {
+      // Cleanup function
+      if (authService) {
+        authService.logout().catch(console.error);
+      }
+      setAuthService(null);
+      setProvider(null);
+      setLoggedIn(false);
+      setUserInfo(null);
+    };
+  }, [initAuth]);
 
   const handleLogin = useCallback(async () => {
     if (!authService) {
@@ -40,11 +56,23 @@ export const useAuth = () => {
       if (result) {
         setLoggedIn(result.isConnected);
         setProvider(result.web3authProvider);
+        const info = await authService.getUserInfo();
+        setUserInfo(info);
       }
     } catch (error) {
       console.error("Error during login:", error);
     }
   }, [authService, setLoggedIn]);
+
+  const getUserInfo = useCallback(async () => {
+    if (!authService) {
+      console.log("AuthService not initialized yet");
+      return null;
+    }
+    const info = await authService.getUserInfo();
+    setUserInfo(info);
+    return info;
+  }, [authService]);
 
   const handleLogout = useCallback(async () => {
     if (!authService) {
@@ -67,5 +95,7 @@ export const useAuth = () => {
     handleLogout,
     provider,
     loggedIn,
+    userInfo,
+    getUserInfo
   };
 };

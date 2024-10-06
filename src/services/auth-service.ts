@@ -17,6 +17,7 @@ export default class AuthService {
         "Web3Auth modal user already connected: ",
         this.web3auth.connected
       );
+      await this.web3auth.getUserInfo();
       return this.web3auth.connected;
     } catch (error) {
       console.error(error);
@@ -26,9 +27,9 @@ export default class AuthService {
 
   login = async (): Promise<
     | {
-      isConnected: boolean;
-      web3authProvider: IProvider | null;
-    }
+        isConnected: boolean;
+        web3authProvider: IProvider | null;
+      }
     | undefined
   > => {
     console.log("Web3Auth login requested");
@@ -42,6 +43,20 @@ export default class AuthService {
 
     console.log("Web3Auth login completed with provider:", web3authProvider);
     return { isConnected, web3authProvider };
+  };
+
+  getUserInfo = async () => {
+    if (!this.web3auth) {
+      console.error("Web3Auth not initialized");
+      return null;
+    }
+    try {
+      const userInfo = await this.web3auth.getUserInfo();
+      return userInfo;
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      return null;
+    }
   };
 
   logout = async (): Promise<void> => {

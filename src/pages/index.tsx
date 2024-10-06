@@ -47,6 +47,10 @@ const Login: React.FC<LoginProps> = ({
     setIsInQuiz,
     isAdmin,
     setIsAdmin,
+    userInfos,
+    setUserInfos,
+    isRegistered,
+    setIsRegistered
   } = useTheme();
   const [showScanner, setShowScanner] = useState(false);
   const [hide, setHide] = useState(true);
@@ -57,6 +61,9 @@ const Login: React.FC<LoginProps> = ({
   );
   const [ticketPrice, setTicketPrice] = useState<number | null>(0.1);
   const [isChangingPrice, setIsChangingPrice] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     setIsInQuiz(false);
@@ -88,6 +95,7 @@ const Login: React.FC<LoginProps> = ({
                 return;
               } else {
                 setIsSignedIn(true);
+
               }
             } catch (error) {
               handleLogout();
@@ -111,6 +119,7 @@ const Login: React.FC<LoginProps> = ({
         setIsAdmin(false);
         setBalance(null);
         setAddress(null);
+        setUserInfos(null);
       } finally {
         setLoader(false);
       }
@@ -118,8 +127,157 @@ const Login: React.FC<LoginProps> = ({
       setBalance(null);
       setAddress(null);
       setStatus("Resistance is Futile");
+      setUserInfos(null);
     }
   }, [provider, loggedIn, rpc, isSignedIn]);
+
+  useEffect(() => {
+    const verifyUser = async () => {
+      if (loggedIn && userInfos?.email) {
+        const result = await checkUserExistence(userInfos.email);
+        if (result.exists) {
+          setIsRegistered(true);
+          
+        } else {
+          console.log("User does not exist, opening registration modal");
+          setIsPasswordModalOpen(true);
+        }
+      }
+    };
+
+    verifyUser();
+    console.log(isRegistered);
+  }, [loggedIn, userInfos, isRegistered]);
+
+
+  const checkUserExistence = async (email: string) => {
+    try {
+      console.log(`Checking user existence for email: ${email}`);
+      const response = await fetch(
+        `/api/auth/user-by-email?email=${encodeURIComponent(email)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(`Full response URL: ${response.url}`);
+      console.log(`Response status: ${response.status}`);
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("User exists in database:", userData);
+        return { exists: true, data: userData };
+      } else if (response.status === 404) {
+        const errorData = await response.json();
+        console.log("User not found:", errorData.error);
+        return { exists: false, error: errorData.error };
+      } else {
+        const errorText = await response.text();
+        console.error(
+          `Unexpected error: ${response.status} ${response.statusText}`,
+          errorText
+        );
+        throw new Error(
+          `Server error: ${response.status} ${response.statusText}`
+        );
+      }
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      if (error instanceof Error) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.error(
+          "An unexpected error occurred while checking user existence"
+        );
+      }
+      return { exists: false, error: "An unexpected error occurred" };
+    }
+  };
+
+  const registerUser = async (
+    email: string,
+    username: string,
+    password: string
+  ) => {
+    try {
+    
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("User registered successfully:", userData);
+        toast.success(
+          "Registration successful! Please check your email to confirm your account."
+        );
+        return userData;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Registration failed");
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      toast.error(
+        `Registration failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+      return null;
+    }
+  };
+
+  const validatePasswords = () => {
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match", {
+        theme: "dark",
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: false,
+        progress: undefined,
+      });
+      return false;
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters long", {
+        theme: "dark",
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: false,
+        progress: undefined,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!validatePasswords()) {
+      return;
+    }
+
+    if (userInfos?.email && userInfos?.name) {
+      const registeredUser = await registerUser(
+        userInfos.email,
+        userInfos.name,
+        password
+      );
+      if (registeredUser) {
+        setIsPasswordModalOpen(false);
+        setIsRegistered(true);
+      }
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -131,6 +289,8 @@ const Login: React.FC<LoginProps> = ({
     setIsAdmin(false);
     setTheme(undefined);
     setDifficulty("easy");
+    setUserInfos(null);
+    setIsRegistered(false);
   };
 
   const openModal = () => {
@@ -165,6 +325,37 @@ const Login: React.FC<LoginProps> = ({
     }
     setLoading(false);
   };
+
+  const copyAddress = () => {
+    if (address) {
+      navigator.clipboard.writeText(address)
+        .then(() => {
+          toast.success("Address copied to clipboard!", {
+            theme: "dark",
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: false,
+            progress: undefined,
+          });
+        })
+        .catch(err => {
+          console.error('Failed to copy: ', err);
+          toast.error("Failed to copy address", {
+            theme: "dark",
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: false,
+            progress: undefined,
+          });
+        });
+    }
+  }
 
   const handleBurnUserNFT = async (data: string) => {
     setIsScannerOpen(false);
@@ -434,13 +625,49 @@ const Login: React.FC<LoginProps> = ({
               ) : (
                 <Loader loadingMsg={undefined} styling={undefined} />
               )}
+              {isPasswordModalOpen && (
+                <>
+                  <div className="overlay"></div>
+                  <div className="engage" style={{ maxHeight: "350px" }}>
+                    <div className="rules" style={{ marginBottom: "40px" }}>
+                      <p>
+                        Welcome to GemQuest! To complete your registration,
+                        please enter a password:
+                      </p>
+                    </div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="sci-fi-input"
+                      style={{ marginBottom: "40px" }}
+                    />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="sci-fi-input"
+                      style={{ marginBottom: "40px" }}
+                    />
 
-              {loggedIn && (
+                    <button
+                      className="btnSubmit"
+                      type="button"
+                      onClick={handlePasswordSubmit}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </>
+              )}
+              {loggedIn && isRegistered && (
                 <div>
                   <form className="inputBox">
                     {address && (
-                      <p style={{ marginTop: "10px" }}>
-                        {formatSolanaAddress()}
+                      <p style={{ marginTop: "10px"}}>
+                        {userInfos ? userInfos?.name : formatSolanaAddress()}
                         <br />
                         <span
                           style={{
@@ -453,7 +680,18 @@ const Login: React.FC<LoginProps> = ({
                         >
                           Balance:
                         </span>{" "}
-                        {hide ? "********" : balance?.toFixed(4)} SOL
+                        {hide ? "********" : balance?.toFixed(4)}{" "}
+                        <span
+                          onClick={copyAddress}
+                          style={{
+                            color: "orangered",
+                            fontSize: "1.2rem ",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          SOL
+                        </span>
                       </p>
                     )}
                     <hr />
