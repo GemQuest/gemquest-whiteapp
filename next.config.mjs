@@ -4,7 +4,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
+        source: "/dbapi/:path*",
         destination: "http://0.0.0.0:3030/:path*", // Le serveur backend
       },
     ];

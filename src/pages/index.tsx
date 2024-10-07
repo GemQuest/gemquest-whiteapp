@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import Loader from "../components/Loader";
 import Header from "../components/Header";
@@ -11,6 +11,7 @@ import { sciFiThemes, messageToSign, qrCodeValidity } from "../utils";
 import { ToastContainer, toast } from "react-toastify";
 import { useTheme } from "../lib/ThemeContext";
 import SciFiSelect from "../components/SciFiSelect";
+import { useAuth } from "../hook/useAuth";
 
 interface LoginProps {
   login: () => Promise<void>;
@@ -64,6 +65,9 @@ const Login: React.FC<LoginProps> = ({
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const loginAttemptCountRef = useRef<number>(0);
+  const { isInitializing, loginAttemptInProgress, resetState, initAuth } =
+    useAuth();
 
   useEffect(() => {
     setIsInQuiz(false);
@@ -154,7 +158,7 @@ const Login: React.FC<LoginProps> = ({
     try {
       console.log(`Checking user existence for email: ${email}`);
       const response = await fetch(
-        `/api/auth/user-by-email?email=${encodeURIComponent(email)}`,
+        `/dbapi/auth/user-by-email?email=${encodeURIComponent(email)}`,
         {
           method: "GET",
           headers: {
@@ -203,7 +207,7 @@ const Login: React.FC<LoginProps> = ({
   ) => {
     try {
     
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/dbapi/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password }),
@@ -666,7 +670,7 @@ const Login: React.FC<LoginProps> = ({
                 <div>
                   <form className="inputBox">
                     {address && (
-                      <p style={{ marginTop: "10px"}}>
+                      <p style={{ marginTop: "10px" }}>
                         {userInfos ? userInfos?.name : formatSolanaAddress()}
                         <br />
                         <span
@@ -873,9 +877,18 @@ const Login: React.FC<LoginProps> = ({
               )}
               {!loggedIn && (
                 <div>
-                  <button className="btnSubmit" type="button" onClick={login}>
-                    Connect !
-                  </button>
+                  {isInitializing || loginAttemptInProgress ? (
+                    <Loader loadingMsg={undefined} styling={undefined} />
+                  ) : (
+                    <button
+                      className="btnSubmit"
+                      type="button"
+                      onClick={login}
+                      disabled={isInitializing || loginAttemptInProgress}
+                    >
+                      Connect !
+                    </button>
+                  )}
                 </div>
               )}
             </div>

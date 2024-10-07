@@ -15,22 +15,22 @@ export const ThemeProvider = ({ children }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const { getUserInfo, loggedIn } = useAuth();
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (loggedIn && isSignedIn) {
-        try {
-          const info = await getUserInfo();
-          setUserInfos(info);
-        } catch (error) {
-          console.error("Error fetching user info:", error);
-        }
-      } else {
-        setUserInfos(null);
-      }
-    };
+   useEffect(() => {
+     const fetchUserInfo = async () => {
+       if (loggedIn && isSignedIn) {
+         try {
+           const info = await getUserInfo();
+           setUserInfos(info);
+         } catch (error) {
+           console.error("Error fetching user info:", error);
+         }
+       } else {
+         setUserInfos(null);
+       }
+     };
 
-    fetchUserInfo();
-  }, [loggedIn, isSignedIn, getUserInfo]);
+     fetchUserInfo();
+   }, [loggedIn, isSignedIn, getUserInfo]);
 
   return (
     <ThemeContext.Provider
@@ -52,7 +52,7 @@ export const ThemeProvider = ({ children }) => {
         userInfos,
         setUserInfos,
         isRegistered,
-        setIsRegistered
+        setIsRegistered,
       }}
     >
       {children}

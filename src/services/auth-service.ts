@@ -3,25 +3,28 @@ import { IProvider } from "@web3auth/base";
 
 export default class AuthService {
   private web3auth: Web3Auth;
+  private initialized: boolean = false;
 
   constructor(web3authInstance: Web3Auth) {
     this.web3auth = web3authInstance;
   }
 
   initWeb3authModal = async (): Promise<boolean> => {
+    if (this.initialized) return this.web3auth.connected;
+
     try {
       console.log("Web3Auth modal initialization");
       await this.web3auth.initModal();
+      this.initialized = true;
       console.log("Web3Auth modal is now initialized");
       console.log(
-        "Web3Auth modal user already connected: ",
+        "Web3Auth modal user already connected:",
         this.web3auth.connected
       );
-      await this.web3auth.getUserInfo();
       return this.web3auth.connected;
     } catch (error) {
-      console.error(error);
-      return false;
+      console.error("Error initializing Web3Auth modal:", error);
+      throw error;
     }
   };
 
@@ -32,17 +35,20 @@ export default class AuthService {
       }
     | undefined
   > => {
-    console.log("Web3Auth login requested");
-    if (!this.web3auth) {
-      console.log("Web3Auth not initialized yet");
-      return;
+    if (!this.initialized) {
+      await this.initWeb3authModal();
     }
 
-    const web3authProvider = await this.web3auth.connect();
-    const isConnected = this.web3auth.connected;
-
-    console.log("Web3Auth login completed with provider:", web3authProvider);
-    return { isConnected, web3authProvider };
+    console.log("Web3Auth login requested");
+    try {
+      const web3authProvider = await this.web3auth.connect();
+      const isConnected = this.web3auth.connected;
+      console.log("Web3Auth login completed with provider:", web3authProvider);
+      return { isConnected, web3authProvider };
+    } catch (error) {
+      console.error("Error during Web3Auth login:", error);
+      throw error;
+    }
   };
 
   getUserInfo = async () => {
@@ -65,7 +71,34 @@ export default class AuthService {
       return;
     }
     console.log("Web3Auth logout requested");
-    await this.web3auth.logout();
-    console.log("Web3Auth logout completed");
+    try {
+      await this.web3auth.logout();
+      console.log("Web3Auth logout completed");
+    } catch (error) {
+      console.error("Error during Web3Auth logout:", error);
+      throw error;
+    }
+  };
+
+  cleanup = async (): Promise<void> => {
+    if (this.web3auth) {
+      console.log("Cleaning up Web3Auth");
+      this.web3auth.clearCache();
+      this.web3auth.removeAllListeners();
+
+      // Force clear local storage
+      localStorage.removeItem("openlogin_store");
+      localStorage.removeItem("Web3Auth-cachedAdapter");
+
+      // Clear session storage
+      sessionStorage.clear();
+
+      
+
+      // Reset the initialization state
+      this.initialized = false;
+
+      console.log("Web3Auth cleanup completed");
+    }
   };
 }

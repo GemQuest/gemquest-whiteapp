@@ -29,7 +29,7 @@ const getWeb3AuthInstance = async (clientId: string): Promise<Web3Auth> => {
       defaultLanguage: "en",
       loginGridCol: 3,
       primaryButton: "externalLogin",
-      uxMode: "redirect",
+      uxMode: "redirect"
     },
     web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
     privateKeyProvider: solanaPrivateKeyProvider,

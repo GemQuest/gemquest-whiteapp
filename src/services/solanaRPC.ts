@@ -376,7 +376,7 @@ export default class SolanaRpc {
         },
       });
 
-      const { blockhash } = await conn.getRecentBlockhash("finalized");
+      const { blockhash } = await conn.getLatestBlockhash("finalized");
 
       const transaction = new Transaction({
         recentBlockhash: blockhash,
