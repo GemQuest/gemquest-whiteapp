@@ -145,7 +145,7 @@ export const useAuth = () => {
       await authService.logout();
       resetState();
       loginAttemptCountRef.current = 0; // Reset attempt count on logout
-      router.reload();
+      // router.reload();
     } catch (error) {
       console.error("Error during logout:", error);
     } 

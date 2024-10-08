@@ -15,10 +15,6 @@ export const ThemeProvider = ({ children }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const { getUserInfo, loggedIn } = useAuth();
   
-  const resetUserInfos = useCallback(() => {
-    setUserInfos(null);
-  }, []);
-
   useEffect(() => {
      const fetchUserInfo = async () => {
        if (loggedIn && isSignedIn) {
@@ -30,7 +26,7 @@ export const ThemeProvider = ({ children }) => {
            console.error("Error fetching user info:", error);
          }
        } else {
-         resetUserInfos();
+         setUserInfos(null);
        }
      };
 
@@ -58,7 +54,7 @@ export const ThemeProvider = ({ children }) => {
         setUserInfos,
         isRegistered,
         setIsRegistered,
-        resetUserInfos,
+       
       }}
     >
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Loader from "../components/Loader";
 import Header from "../components/Header";
@@ -52,7 +52,6 @@ const Login: React.FC<LoginProps> = ({
     setUserInfos,
     isRegistered,
     setIsRegistered,
-    resetUserInfos
   } = useTheme();
   const [showScanner, setShowScanner] = useState(false);
   const [hide, setHide] = useState(true);
@@ -66,15 +65,28 @@ const Login: React.FC<LoginProps> = ({
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { isInitializing, loginAttemptInProgress} =
-    useAuth();
+  const { isInitializing, loginAttemptInProgress } = useAuth();
 
   useEffect(() => {
     setIsInQuiz(false);
   }, [setIsInQuiz]);
 
-  useEffect(() => { 
-    resetUserInfos();
+  useEffect(() => {
+    setStatus(
+       !loggedIn
+         ? "Onboarding"
+         : isAdmin
+         ? "GemQuest Admin"
+         : isRegistered
+         ? "Valued GemQuest Member"
+         : "Please register/signin with your email"
+    );
+    if (!isRegistered) {
+      setUserInfos(null);
+    }
+  }, [loggedIn, isAdmin, isRegistered]);
+
+  useEffect(() => {
     if (provider && loggedIn) {
       setLoader(true);
       try {
@@ -99,7 +111,6 @@ const Login: React.FC<LoginProps> = ({
                 return;
               } else {
                 setIsSignedIn(true);
-
               }
             } catch (error) {
               await handleLogout();
@@ -109,12 +120,11 @@ const Login: React.FC<LoginProps> = ({
           const adminWallet = await rpc?.getAdminWallet();
           if (adminWallet?.publicKey.toBase58() === address) {
             setIsAdmin(true);
-            console.log(isAdmin)
+            console.log(isAdmin);
           }
           const balance = await rpc?.getBalance();
           setBalance(balance ? parseFloat(balance) / LAMPORTS_PER_SOL : null);
           setAddress(address);
-          setStatus(isAdmin ? "GemQuest Admin": isRegistered && !isAdmin ? "Valued GemQuest Member": "Please register/signin with your email");
         };
         fetchInfos();
       } catch (error) {
@@ -124,8 +134,7 @@ const Login: React.FC<LoginProps> = ({
         setIsAdmin(false);
         setBalance(null);
         setAddress(null);
-        //setUserInfos(null);
-        resetUserInfos();
+        setUserInfos(null);
       } finally {
         setLoader(false);
       }
@@ -133,8 +142,8 @@ const Login: React.FC<LoginProps> = ({
       setBalance(null);
       setAddress(null);
       setStatus("Onboarding");
-      //setUserInfos(null);
-      resetUserInfos();
+      setUserInfos(null);
+      
     }
   }, [provider, loggedIn, rpc, isSignedIn, isAdmin]);
 
@@ -144,18 +153,17 @@ const Login: React.FC<LoginProps> = ({
         const result = await checkUserExistence(userInfos.email);
         if (result.exists) {
           setIsRegistered(true);
-          
         } else {
           console.log("User does not exist, opening registration modal");
           setIsPasswordModalOpen(true);
         }
-      } 
+      }
+     
     };
 
     verifyUser();
     console.log(isRegistered);
   }, [loggedIn, userInfos, isRegistered]);
-
 
   const checkUserExistence = async (email: string) => {
     try {
@@ -209,7 +217,6 @@ const Login: React.FC<LoginProps> = ({
     password: string
   ) => {
     try {
-    
       const response = await fetch("/dbapi/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -287,7 +294,6 @@ const Login: React.FC<LoginProps> = ({
   };
 
   const handleLogout = async () => {
-    resetUserInfos();
     setIsInQuiz(false);
     setIsSignedIn(false);
     setBalance(null);
@@ -299,7 +305,7 @@ const Login: React.FC<LoginProps> = ({
     setUserInfos(null);
     setIsRegistered(false);
     await logout();
-    resetUserInfos();
+    
   };
 
   const openModal = () => {
@@ -337,7 +343,8 @@ const Login: React.FC<LoginProps> = ({
 
   const copyAddress = () => {
     if (address) {
-      navigator.clipboard.writeText(address)
+      navigator.clipboard
+        .writeText(address)
         .then(() => {
           toast.success("Address copied to clipboard!", {
             theme: "dark",
@@ -350,8 +357,8 @@ const Login: React.FC<LoginProps> = ({
             progress: undefined,
           });
         })
-        .catch(err => {
-          console.error('Failed to copy: ', err);
+        .catch((err) => {
+          console.error("Failed to copy: ", err);
           toast.error("Failed to copy address", {
             theme: "dark",
             position: "top-right",
@@ -364,7 +371,7 @@ const Login: React.FC<LoginProps> = ({
           });
         });
     }
-  }
+  };
 
   const handleBurnUserNFT = async (data: string) => {
     setIsScannerOpen(false);
@@ -671,7 +678,7 @@ const Login: React.FC<LoginProps> = ({
                   </div>
                 </>
               )}
-              {loggedIn && (isRegistered || isAdmin)&& (
+              {loggedIn && (isRegistered || isAdmin) && (
                 <div>
                   <form className="inputBox">
                     {address && (
