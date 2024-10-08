@@ -5,7 +5,7 @@ import { getDefaultExternalAdapters } from "@web3auth/default-solana-adapter";
 
 const getWeb3AuthInstance = async (clientId: string): Promise<Web3Auth> => {
   const chainConfig = {
-    chainId: "103",
+    chainId: "0x3",
     chainNamespace: CHAIN_NAMESPACES.SOLANA,
     rpcTarget: "https://api.devnet.solana.com",
     tickerName: "SOLANA",

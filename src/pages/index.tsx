@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect} from "react";
 import { useRouter } from "next/router";
 import Loader from "../components/Loader";
 import Header from "../components/Header";
@@ -30,7 +30,7 @@ const Login: React.FC<LoginProps> = ({
 }) => {
   const router = useRouter();
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("Resistance is Futile");
+  const [status, setStatus] = useState("Onboarding");
   const [loader, setLoader] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -51,7 +51,8 @@ const Login: React.FC<LoginProps> = ({
     userInfos,
     setUserInfos,
     isRegistered,
-    setIsRegistered
+    setIsRegistered,
+    resetUserInfos
   } = useTheme();
   const [showScanner, setShowScanner] = useState(false);
   const [hide, setHide] = useState(true);
@@ -65,16 +66,15 @@ const Login: React.FC<LoginProps> = ({
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const loginAttemptCountRef = useRef<number>(0);
-  const { isInitializing, loginAttemptInProgress, resetState, initAuth } =
+  const { isInitializing, loginAttemptInProgress} =
     useAuth();
 
   useEffect(() => {
     setIsInQuiz(false);
   }, [setIsInQuiz]);
 
-  useEffect(() => {
-    setIsAdmin(false);
+  useEffect(() => { 
+    resetUserInfos();
     if (provider && loggedIn) {
       setLoader(true);
       try {
@@ -95,45 +95,48 @@ const Login: React.FC<LoginProps> = ({
                   draggable: false,
                   progress: undefined,
                 });
-                handleLogout();
+                await handleLogout();
                 return;
               } else {
                 setIsSignedIn(true);
 
               }
             } catch (error) {
-              handleLogout();
+              await handleLogout();
               throw new Error("An error occurred while signing message");
             }
           }
           const adminWallet = await rpc?.getAdminWallet();
           if (adminWallet?.publicKey.toBase58() === address) {
             setIsAdmin(true);
+            console.log(isAdmin)
           }
           const balance = await rpc?.getBalance();
           setBalance(balance ? parseFloat(balance) / LAMPORTS_PER_SOL : null);
           setAddress(address);
-          setStatus("You have been assimilated");
+          setStatus(isAdmin ? "GemQuest Admin": isRegistered && !isAdmin ? "Valued GemQuest Member": "Please register/signin with your email");
         };
         fetchInfos();
       } catch (error) {
         console.error(error);
         setError("An error occurred");
-        setStatus("Resistance is Futile");
+        setStatus("Onboarding");
         setIsAdmin(false);
         setBalance(null);
         setAddress(null);
-        setUserInfos(null);
+        //setUserInfos(null);
+        resetUserInfos();
       } finally {
         setLoader(false);
       }
     } else {
       setBalance(null);
       setAddress(null);
-      setStatus("Resistance is Futile");
-      setUserInfos(null);
+      setStatus("Onboarding");
+      //setUserInfos(null);
+      resetUserInfos();
     }
-  }, [provider, loggedIn, rpc, isSignedIn]);
+  }, [provider, loggedIn, rpc, isSignedIn, isAdmin]);
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -146,7 +149,7 @@ const Login: React.FC<LoginProps> = ({
           console.log("User does not exist, opening registration modal");
           setIsPasswordModalOpen(true);
         }
-      }
+      } 
     };
 
     verifyUser();
@@ -284,17 +287,19 @@ const Login: React.FC<LoginProps> = ({
   };
 
   const handleLogout = async () => {
-    await logout();
+    resetUserInfos();
     setIsInQuiz(false);
     setIsSignedIn(false);
     setBalance(null);
     setAddress(null);
-    setStatus("Resistance is Futile");
+    setStatus("Onboarding");
     setIsAdmin(false);
     setTheme(undefined);
     setDifficulty("easy");
     setUserInfos(null);
     setIsRegistered(false);
+    await logout();
+    resetUserInfos();
   };
 
   const openModal = () => {
@@ -666,7 +671,7 @@ const Login: React.FC<LoginProps> = ({
                   </div>
                 </>
               )}
-              {loggedIn && isRegistered && (
+              {loggedIn && (isRegistered || isAdmin)&& (
                 <div>
                   <form className="inputBox">
                     {address && (
@@ -725,7 +730,7 @@ const Login: React.FC<LoginProps> = ({
                                 onClick={openModal}
                                 disabled={loading || !address}
                               >
-                                Start a quiz !
+                                StarT a quiz !
                               </button>
                               <button
                                 className="btnSubmit"

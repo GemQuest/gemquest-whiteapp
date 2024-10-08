@@ -45,7 +45,7 @@ const QuizzOver = forwardRef((props, ref) => {
   };
 
   const handleMintGems = async () => {
-    // let gemsToMint = 300; // For testing, replace with gemsEarned in production
+    //let gemsToMint = 300; // For testing, replace with gemsEarned in production
     let gemsToMint = gemsEarned;
     if (gemsToMint === 0) return;
     setLoading(true);

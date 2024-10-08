@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "../hook/useAuth";
 
 const ThemeContext = createContext();
@@ -14,18 +14,23 @@ export const ThemeProvider = ({ children }) => {
   const [userInfos, setUserInfos] = useState(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const { getUserInfo, loggedIn } = useAuth();
+  
+  const resetUserInfos = useCallback(() => {
+    setUserInfos(null);
+  }, []);
 
-   useEffect(() => {
+  useEffect(() => {
      const fetchUserInfo = async () => {
        if (loggedIn && isSignedIn) {
          try {
+          setUserInfos(null);
            const info = await getUserInfo();
            setUserInfos(info);
          } catch (error) {
            console.error("Error fetching user info:", error);
          }
        } else {
-         setUserInfos(null);
+         resetUserInfos();
        }
      };
 
@@ -53,6 +58,7 @@ export const ThemeProvider = ({ children }) => {
         setUserInfos,
         isRegistered,
         setIsRegistered,
+        resetUserInfos,
       }}
     >
       {children}

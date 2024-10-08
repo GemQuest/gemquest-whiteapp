@@ -73,6 +73,7 @@ export default class AuthService {
     console.log("Web3Auth logout requested");
     try {
       await this.web3auth.logout();
+      await this.cleanup();
       console.log("Web3Auth logout completed");
     } catch (error) {
       console.error("Error during Web3Auth logout:", error);
@@ -85,16 +86,16 @@ export default class AuthService {
       console.log("Cleaning up Web3Auth");
       this.web3auth.clearCache();
       this.web3auth.removeAllListeners();
-
       // Force clear local storage
       localStorage.removeItem("openlogin_store");
       localStorage.removeItem("Web3Auth-cachedAdapter");
-
       // Clear session storage
       sessionStorage.clear();
-
-      
-
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("Web3Auth") || key.startsWith("openlogin")) {
+          localStorage.removeItem(key);
+        }
+      });
       // Reset the initialization state
       this.initialized = false;
 

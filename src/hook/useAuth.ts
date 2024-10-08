@@ -3,6 +3,7 @@ import { OpenloginUserInfo } from "@web3auth/openlogin-adapter";
 import { IProvider } from "@web3auth/base";
 import { getWeb3AuthInstance } from "../lib/web3-auth";
 import AuthService from "../services/auth-service";
+import { useRouter } from "next/router";
 
 export const useAuth = () => {
   const [provider, setProvider] = useState<IProvider | null>(null);
@@ -17,6 +18,7 @@ export const useAuth = () => {
   const initializationPromise = useRef<Promise<void> | null>(null);
   const loginAttemptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loginAttemptCountRef = useRef<number>(0);
+  const router = useRouter();
 
   const resetState = useCallback(() => {
     setProvider(null);
@@ -33,6 +35,7 @@ export const useAuth = () => {
     }
     localStorage.removeItem("openlogin_store");
     localStorage.removeItem("Web3Auth-cachedAdapter");
+    sessionStorage.clear(); 
     console.log("Auth state reset completed");
   }, [authService]);
 
@@ -137,12 +140,15 @@ export const useAuth = () => {
     }
 
     try {
+      setLoggedIn(false); 
+      setUserInfo(null); 
       await authService.logout();
       resetState();
       loginAttemptCountRef.current = 0; // Reset attempt count on logout
+      router.reload();
     } catch (error) {
       console.error("Error during logout:", error);
-    }
+    } 
   }, [authService, resetState]);
 
   const getUserInfo = useCallback(async () => {
