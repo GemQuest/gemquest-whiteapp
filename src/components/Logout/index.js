@@ -4,7 +4,7 @@ import ReactTooltip from "react-tooltip-rc";
 
 const Logout = ({ logout, onBackToHome }) => {
   const router = useRouter();
-  const { setTheme, setDifficulty, setIsInQuiz, setIsAdmin, setIsSignedIn } =
+  const { setTheme, setDifficulty, setIsInQuiz, setIsAdmin, setIsSignedIn, setIsRegistered, setUserInfos } =
     useTheme();
 
   const handleLogout = async () => {
@@ -13,8 +13,10 @@ const Logout = ({ logout, onBackToHome }) => {
     setIsInQuiz(false);
     setIsAdmin(false);
     setIsSignedIn(false);
+    setIsRegistered(false);
+    setUserInfos(null);
     await logout();
-    router.push("/");
+    //router.push("/");
   };
 
   return (
